@@ -1,0 +1,3 @@
+[submodule "libEZmock/prand"]
+	path = libEZmock/prand
+	url = git@github.com:cheng-zhao/prand.git
