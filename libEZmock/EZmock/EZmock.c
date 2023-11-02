@@ -56,7 +56,7 @@ EZMOCK *EZmock_init(const double Lbox, const int Ngrid, const int randgen,
     default:
       *err = EZMOCK_ERR_ARG_RNG; return NULL;
   }
-  if (seed <= 0) {
+  if (seed == 0) {
     *err = EZMOCK_ERR_ARG_SEED; return NULL;
   }
   if (nthread < 0) {

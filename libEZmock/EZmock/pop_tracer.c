@@ -802,7 +802,9 @@ static void generate_tracers(EZMOCK *ez, const EZMOCK_PDF *pdf,
   size_t iv = 0;        /* starting index of tracers without particles */
 
   if (att_part) {
+#ifndef EZMOCK_VELOCITY_ALL_INTERP
     EZMOCK_COSMO *cosmo = (EZMOCK_COSMO *) ez->cosmo;
+#endif
     const real igs = conf->Ng / conf->Lbox;             /* inverse grid size */
     size_t cnt = 0;
 
