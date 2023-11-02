@@ -164,7 +164,7 @@ static void bias_model(EZMOCK *ez, EZMOCK_PDF *pdf, const real rho_c,
   }
 
   const real thres = (rho_c == 0) ? REAL_MIN : rho_c;   /* skip 0 density */
-  const real iexp = 1 / rho_exp;
+  const double iexp = -1 / rho_exp;
 
   /* Estimate the maximum tracer number density for histogramming. */
   const real rho_max = 1 + lambda * 5;  /* 5-sigma limit of Gaussian randoms */
@@ -258,7 +258,8 @@ static void bias_model(EZMOCK *ez, EZMOCK_PDF *pdf, const real rho_c,
       g2 = (g2 >= 0) ? 1 + g2 : exp(g2);
 
       /* Map dark matter density to tracer number density. */
-      mesh->rhot[i] = (1 - exp(-mesh->rhot[i] * iexp)) * g1;
+      double tmp = (1 - exp((double) mesh->rhot[i] * iexp)) * g1;
+      mesh->rhot[i] = tmp;
 
       /* Update the histogram of log2(rhot). */
       int idx = imax - ilogb(mesh->rhot[i]);    /* large densities first */
@@ -271,7 +272,8 @@ static void bias_model(EZMOCK *ez, EZMOCK_PDF *pdf, const real rho_c,
       /* Use the second random number for the next tracer density. */
       while (++i < iend) {
         if (mesh->rhot[i] == 0) continue;
-        mesh->rhot[i] = (1 - exp(-mesh->rhot[i] * iexp)) * g2;
+        tmp = (1 - exp((double) mesh->rhot[i] * iexp)) * g2;
+        mesh->rhot[i] = tmp;
 
         /* Update the histogram of log2(rhot). */
         idx = imax - ilogb(mesh->rhot[i]);      /* large densities first */
@@ -310,7 +312,7 @@ static void bias_model(EZMOCK *ez, EZMOCK_PDF *pdf, const real rho_c,
     g2 = (g2 >= 0) ? 1 + g2 : exp(g2);
 
     /* Map dark matter density to tracer number density. */
-    mesh->rhot[i] = (1 - exp(-mesh->rhot[i] * iexp)) * g1;
+    mesh->rhot[i] = (1 - exp(mesh->rhot[i] * iexp)) * g1;
 
     /* Update the histogram of log2(rhot). */
     int idx = imax - ilogb(mesh->rhot[i]);    /* large densities first */
@@ -327,7 +329,7 @@ static void bias_model(EZMOCK *ez, EZMOCK_PDF *pdf, const real rho_c,
       }
       mesh->rhot[i] = (mesh->rho[i] > rho_sat) ? rho_sat : mesh->rho[i];
       cnt++;
-      mesh->rhot[i] = (1 - exp(-mesh->rhot[i] * iexp)) * g2;
+      mesh->rhot[i] = (1 - exp(mesh->rhot[i] * iexp)) * g2;
 
       /* Update the histogram of log2(rhot). */
       idx = imax - ilogb(mesh->rhot[i]);      /* large densities first */
@@ -354,8 +356,8 @@ Arguments:
   * `att_part`: indicate whether to attach tracers to particles;
   * `err`:      integer storing the error code.
 ******************************************************************************/
-static void n_tracer_in_cell(EZMOCK *ez, const EZMOCK_PDF *pdf,
-    const bool att_part, int *err) {
+static void n_tracer_in_cell(EZMOCK *ez, EZMOCK_PDF *pdf, const bool att_part,
+    int *err) {
   /* Get the density threshold given the histogram and desired cell number. */
   int imax;     /* maximum index of the density histogram to be considered */
   size_t cnt = 0;
@@ -393,8 +395,7 @@ static void n_tracer_in_cell(EZMOCK *ez, const EZMOCK_PDF *pdf,
     /* Get the histogram bin of the tracer density. */
     int idx = pdf->ilogb_max - ilogb(mesh->rhot[i]);
     if (idx < 0) idx = 0;
-    else if (idx >= EZMOCK_TRACER_DENSITY_NUM_LOGB_BIN)
-      idx = EZMOCK_TRACER_DENSITY_NUM_LOGB_BIN - 1;
+    else if (idx > imax) idx = imax;
 #ifdef OMP
 #pragma omp critical
 #endif
@@ -426,10 +427,29 @@ static void n_tracer_in_cell(EZMOCK *ez, const EZMOCK_PDF *pdf,
     else {
       size_t buf;
       qselect(cidx + cnt, cpdf[ipdf], nrest, &buf, mesh->rhot);
-      used += cpdf[ipdf];
-      cnt += cpdf[ipdf];
-      ipdf++;           /* go to the next PDF bin */
-      i--;              /* continue with the same histogram bin */
+
+      /* Check the minimum density of processed cells. */
+      size_t ecnt = cnt + cpdf[ipdf];
+      real min = mesh->rhot[cidx[ecnt - 1]];
+      for (size_t k = cnt; k < ecnt - 1; k++)
+        if (min > mesh->rhot[cidx[k]]) min = mesh->rhot[cidx[k]];
+      /* Include extra cells with the same density. */
+      for (size_t k = ecnt; k < cnt + nrest; k++) {
+        if (mesh->rhot[cidx[k]] == min) {
+          buf = cidx[ecnt];
+          cidx[ecnt++] = cidx[k];
+          cidx[k] = buf;
+          pdf->pdf[ipdf]++;
+          pdf->ncell++;
+          pdf->ntot += pdf->nmax - ipdf;
+        }
+      }
+
+      used += ecnt - cnt;
+      cnt = ecnt;
+      ipdf++;                           /* go to the next PDF bin */
+      if (used < pdf->hist[i]) i--;     /* continue with the same hist bin */
+      else used -= pdf->hist[i];
     }
     if (ipdf == pdf->nmax) break;
   }
@@ -481,7 +501,7 @@ static void n_tracer_in_cell(EZMOCK *ez, const EZMOCK_PDF *pdf,
   for (int i = 0; i < pdf->nmax; i++) {
     size_t istart = iend;
     iend += pdf->pdf[i];
-    uint16_t nt = pdf->nmax - i;
+    int16_t nt = pdf->nmax - i;
 #ifdef OMP
     /* Use multiple threads only if there are enough tasks per threads. */
     if (pdf->pdf[i] > (((size_t) conf->nthread) << 2)) {

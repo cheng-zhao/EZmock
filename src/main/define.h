@@ -60,18 +60,18 @@
 #define DEFAULT_HEADER                  true
 #define DEFAULT_VERBOSE                 true
 
-#define EZMOCK_MAX_NGRID               65536
+#define EZMOCK_MAX_NGRID                65536
 
 /* Priority of parameters from different sources. */
-#define EZMOCK_PRIOR_CMD               5
-#define EZMOCK_PRIOR_FILE              1
+#define EZMOCK_PRIOR_CMD                5
+#define EZMOCK_PRIOR_FILE               1
 
 /*============================================================================*\
                             Definitions for file IO
 \*============================================================================*/
-#define EZMOCK_PATH_SEP        '/'     /* separator for file paths     */
-#define EZMOCK_FILE_CHUNK      1048576 /* chunk size for ASCII file IO */
-#define EZMOCK_MAX_CHUNK       INT_MAX /* maximum allowed chunk size   */
+#define EZMOCK_PATH_SEP        '/'      /* separator for file paths     */
+#define EZMOCK_FILE_CHUNK      1048576  /* chunk size for ASCII file IO */
+#define EZMOCK_MAX_CHUNK       INT_MAX  /* maximum allowed chunk size   */
 /* Initial number of objects allocated for the catalogs.        */
 #define EZMOCK_DATA_INIT_NUM   128
 /* Maximum number of objects stored for each thread.            */

@@ -65,7 +65,7 @@ Return:
 static int save_box_ascii(CONF *conf, const real *x, const real *y,
     const real *z, const real *vx, const real *vy, const real *vz,
     const size_t ndata) {
-  /* Initialise the interface for writing files. */
+  /* Initialise the interface for writing the file. */
   OFILE *ofile = output_init();
   if (!ofile) return EZMOCK_ERR_FILE;
   if (output_newfile(ofile, conf->output)) {
@@ -115,12 +115,16 @@ Arguments:
   * `vx`:       array for the peculiar velocities along the x direction;
   * `vy`:       array for the peculiar velocities along the y direction;
   * `vz`:       array for the peculiar velocities along the z direction;
-  * `ndata`:    number of tracers in the tracer catalogue.
+  * `ndata`:    number of tracers in the chunk;
+  * `ntot`:     number of tracers in total;
+  * `chk_id`:   index of the chunk;
+  * `nchk`:     number of chunks in total.
 Return:
   Zero on success; non-zero on error.
 ******************************************************************************/
 static int save_chunk_fits(CONF *conf, const char *fname, real *x, real *y,
-    real *z, real *vx, real *vy, real *vz, const size_t ndata) {
+    real *z, real *vx, real *vy, real *vz, const size_t ndata,
+    const size_t ntot, int chk_id, int nchk) {
   fitsfile *fp = NULL;
   int status = 0;
 
@@ -155,8 +159,15 @@ static int save_chunk_fits(CONF *conf, const char *fname, real *x, real *y,
 
   /* Write the header unit. */
   if (conf->header) {
+    size_t ntracer = ntot;
     char *rng_name[2] = {"MRG32K3A", "MT19937"};
-    if (fits_write_key(fp, TDOUBLE  , "BOX_SIZE", &conf->Lbox,
+    if (fits_write_key(fp, TLONGLONG, "NUM_TOT" , &ntracer,
+            "total number of tracers"                           , &status) ||
+        fits_write_key(fp, TINT     , "CHUNK_ID", &chk_id,
+            "index of the chunk of the catalog (from 1)"        , &status) ||
+        fits_write_key(fp, TINT     , "NCHUNK"  , &nchk,
+            "total number of chunks"                            , &status) ||
+        fits_write_key(fp, TDOUBLE  , "BOX_SIZE", &conf->Lbox,
             "side length of the periodic box"                   , &status) ||
         fits_write_key(fp, TINT     , "NUM_GRID", &conf->Ngrid,
             "number of grid cells per box size"                 , &status) ||
@@ -200,6 +211,7 @@ static int save_chunk_fits(CONF *conf, const char *fname, real *x, real *y,
       (void **) nulval, &status)) FITS_ABORT;
 
   if (fits_close_file(fp, &status)) {
+    P_ERR("cfitsio error: ");
     fits_report_error(stderr, status);
     return EZMOCK_ERR_FILE;
   }
@@ -227,8 +239,10 @@ static int save_box_fits(CONF *conf, real *x, real *y, real *z,
   const int nside = EZMOCK_FITS_CHUNK_PER_SIDE;
 
   /* Save the catalogue as a whole if no chunk is needed. */
-  if (nside <= 1)
-    return save_chunk_fits(conf, conf->output, x, y, z, vx, vy, vz, ndata);
+  if (nside <= 1) {
+    return save_chunk_fits(conf, conf->output, x, y, z, vx, vy, vz, ndata,
+        ndata, 1, 1);
+  }
 
   /* Allocate memory for counting tracers per chunk. */
   const int nchunk = nside * nside * nside;
@@ -375,7 +389,7 @@ static int save_box_fits(CONF *conf, real *x, real *y, real *z,
 
     /* Save chunk of the data catalogue. */
     int e = save_chunk_fits(conf, fname, x + idx[i], y + idx[i], z + idx[i],
-        vx + idx[i], vy + idx[i], vz + idx[i], cnt[i]);
+        vx + idx[i], vy + idx[i], vz + idx[i], cnt[i], ndata, i + 1, nchunk);
     if (e) return e;
   }
 

@@ -184,8 +184,9 @@ PK_INTERP_LOG   = \n\
 RAND_GENERATOR  = \n\
     # Integer, specify the random number generator (unset: %d).\n\
     # Allowed values are:\n\
-    # * 0: MRG32K3A\n\
-    # * 1: MT19937\n\
+    # * 0: MRG32k3a\n\
+    # * 1: Mersenne Twister 19937\n\
+    # See https://github.com/cheng-zhao/prand for details.\n\
 RAND_SEED       = \n\
     # Integer, specify the seed for the random number generator.\n\
 FIX_AMPLITUDE   = \n\
@@ -249,7 +250,7 @@ ATTACH_PARTICLE = \n\
 ##############################\n\
 \n\
 OUTPUT          = \n\
-    # String, name of the output mock catalogue.\n"
+    # String, name of the output mock catalog.\n"
 "OUTPUT_FORMAT   = \n\
     # Integer, format of the output catalog (unset: %d). Allowed values are:\n\
     # %d: ASCII text file"

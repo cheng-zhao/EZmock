@@ -413,15 +413,17 @@ int EZmock_create_dens_field(EZMOCK *ez, real *psi[3], bool deepcopy,
     exit(1);
   }
   fclose(fp);
-  if (!(fp = fopen("test/psix.dat","w")) ||
+/*
+  if (!(fp = fopen("psix.dat","w")) ||
       fwrite(mesh->psi[0], size, 1, fp) != 1 || fclose(fp) ||
-      !(fp = fopen("test/psiy.dat","w")) ||
+      !(fp = fopen("psiy.dat","w")) ||
       fwrite(mesh->psi[1], size, 1, fp) != 1 || fclose(fp) ||
-      !(fp = fopen("test/psiz.dat","w")) ||
+      !(fp = fopen("psiz.dat","w")) ||
       fwrite(mesh->psi[2], size, 1, fp) != 1 || fclose(fp)) {
     printf("\nerror saving psi\n");
     exit(1);
   }
+*/
 #endif
   return EZMOCK_SUCCESS;
 }
