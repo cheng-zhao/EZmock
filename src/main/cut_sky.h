@@ -1,5 +1,5 @@
 /*******************************************************************************
-* save_res.h: this file is part of the EZmock program.
+* cut_sky.h: this file is part of the EZmock program.
 
 * EZmock: Effective Zel'dovich approximation mock generator.
 
@@ -28,50 +28,54 @@
 
 *******************************************************************************/
 
-#ifndef __SAVE_RES_H__
-#define __SAVE_RES_H__
+#ifndef __CUT_SKY_H__
+#define __CUT_SKY_H__
 
-#include <stdio.h>
-#include "load_conf.h"
 #include "EZmock.h"
-#include "cut_sky.h"
-
-typedef enum {
-  EZMOCK_OFMT_ASCII = 0,
-  EZMOCK_OFMT_FITS
-} EZMOCK_OFMT;
+#include "load_conf.h"
+#include "convert_z.h"
 
 /*============================================================================*\
-                    Function for saving the tracer catalogue
+                    Data structure for the cut-sky catalogue
+\*============================================================================*/
+typedef struct {
+  size_t n;             /* number of tracers in the cut-sky catalogue */
+  size_t cap;           /* capacity of the cut-sky catalogue          */
+  real *x[4];           /* RA, Dec, redshift, real-space redshift     */
+  uint16_t *status;     /* bit-code indicating the footprint          */
+  real *rand;           /* random number for post-processing          */
+  double num_dens;      /* number density of the catalog              */
+} CDATA;
+
+/*============================================================================*\
+                 Interface for the cutsky catalogue generation
 \*============================================================================*/
 
 /******************************************************************************
-Function `save_box`:
-  Write the periodic tracer catalogue to file.
+Function `cutsky`:
+  Contruct a cut-sky catalogue from a periodic cubic box.
 Arguments:
   * `conf`:     structure for storing configurations;
-  * `x`:        array for the x coordinates;
-  * `y`:        array for the y coordinates;
-  * `z`:        array for the z coordinates;
+  * `cvt`:      structure for redshift conversion;
+  * `x`:        array for the x coordinates of the input cubic mock catalogue;
+  * `y`:        array for the y coordinates of the input cubic mock catalogue;
+  * `z`:        array for the z coordinates of the input cubic mock catalogue;
   * `vx`:       array for the peculiar velocities along the x direction;
   * `vy`:       array for the peculiar velocities along the y direction;
   * `vz`:       array for the peculiar velocities along the z direction;
-  * `ndata`:    number of tracers in the tracer catalogue.
+  * `ndata`:    number of tracers in the input cubic mock catalogue.
 Return:
-  Zero on success; non-zero on error.
+  The cut-sky catalogue on success; NULL on error.
 ******************************************************************************/
-int save_box(CONF *conf, real *x, real *y, real *z,
+CDATA *cutsky(const CONF *conf, const ZCVT *cvt, real *x, real *y, real *z,
     real *vx, real *vy, real *vz, const size_t ndata);
 
 /******************************************************************************
-Function `save_cutsky`:
-  Write the cut-sky tracer catalogue to a file.
+Function `cutsky_init`:
+  Deconstruct the cut-sky catalogue;
 Arguments:
-  * `conf`:     structure for storing configurations;
   * `data`:     instance of the cut-sky catalogue.
-Return:
-  Zero on success; non-zero on error.
 ******************************************************************************/
-int save_cutsky(CONF *conf, CDATA *data);
+void cutsky_destroy(CDATA *data);
 
 #endif

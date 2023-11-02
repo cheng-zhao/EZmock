@@ -120,11 +120,25 @@ Generate the Effective Zel'dovich approximation mock (EZmock).\n\
         Set the standard deviation of random local peculiar motions\n\
   -A, --attach-part     " FMT_KEY(ATTACH_PARTICLE) " Boolean\n\
         Indicate whether to attach tracers to particles whenever possible\n\
+  -u, --cutsky          " FMT_KEY(CUTSKY) "          Boolean\n\
+        Indicate whether to generate the cutsky mock catalog\n\
+      --y5-foot         " FMT_KEY(DESI_Y5_FOOT) "    String\n\
+        Specify the filename of the DESI Y5 tile list\n\
+  -T, --foot            " FMT_KEY(DESI_NOW_FOOT) "   String\n\
+        Specify the filename of the current DESI tile list\n\
+  -G, --galactic-cap    " FMT_KEY(GALACTIC_CAP) "    Character\n\
+        Specify the galactic cap of the cutsky catalog\n\
+      --zmin            " FMT_KEY(CUTSKY_ZMIN) "     Double\n\
+        Set the minimum redshift of the cutsky catalog\n\
+      --zmax            " FMT_KEY(CUTSKY_ZMAX) "     Double\n\
+        Set the maximum redshift of the cutsky catalog\n\
   -o, --output          " FMT_KEY(OUTPUT) "          String\n\
-        Specify the filename of the output tracer catalog\n"
-"  -F, --format          " FMT_KEY(OUTPUT_FORMAT) "    Integer\n\
-        Specify the format of the output catalog\n"
-"      --output-header   " FMT_KEY(OUTPUT_HEADER) "   Boolean\n\
+        Specify the filename of the output cubic mock catalog\n\
+  -O, --output-cutsky   " FMT_KEY(OUTPUT_CUTSKY) "   String\n\
+        Specify the filename of the output cutsky mock catalog\n\
+  -F, --format          " FMT_KEY(OUTPUT_FORMAT) "   Integer\n\
+        Specify the format of the output catalogs\n\
+      --output-header   " FMT_KEY(OUTPUT_HEADER) "   Boolean\n\
         Indicate whether to save configurations as header of the output file\n\
   -w, --overwrite       " FMT_KEY(OVERWRITE) "       Integer\n\
         Indicate whether to overwrite existing output files\n\
@@ -184,8 +198,9 @@ PK_INTERP_LOG   = \n\
 RAND_GENERATOR  = \n\
     # Integer, specify the random number generator (unset: %d).\n\
     # Allowed values are:\n\
-    # * 0: MRG32K3A\n\
-    # * 1: MT19937\n\
+    # * 0: MRG32k3a\n\
+    # * 1: Mersenne Twister 19937\n\
+    # See https://github.com/cheng-zhao/prand for details.\n\
 RAND_SEED       = \n\
     # Integer, specify the seed for the random number generator.\n\
 FIX_AMPLITUDE   = \n\
@@ -210,18 +225,22 @@ VELOCITY_FAC    = \n\
 OMEGA_M         = \n\
     # Double-precision number, matter (without neutrino) density parameter\n\
     # at z = 0.\n\
-    # It is only used of `GROWTH_PK` and `VELOCITY_FAC` are not both set.\n\
+    # It is used if `GROWTH_PK` and `VELOCITY_FAC` are not both set,\n\
+    # or `CUTSKY` = true.\n\
 OMEGA_NU        = \n\
     # Double-precision number, neutrino density parameter at z = 0 (unset: "
     OFMT_DBL ").\n\
-    # It is only used of `GROWTH_PK` and `VELOCITY_FAC` are not both set.\n\
+    # It is used if `GROWTH_PK` and `VELOCITY_FAC` are not both set,\n\
+    # or `CUTSKY` = true.\n\
 DE_EOS_W        = \n\
     # Double-precision number, dark energy equation of state: w (unset: "
     OFMT_DBL ").\n\
-    # It is only used of `GROWTH_PK` and `VELOCITY_FAC` are not both set.\n\
+    # It is used if `GROWTH_PK` and `VELOCITY_FAC` are not both set,\n\
+    # or `CUTSKY` = true.\n\
 REDSHIFT        = \n\
     # Double-precision number, redshift of the periodic box.\n\
-    # It is only used of `GROWTH_PK` and `VELOCITY_FAC` are not both set.\n\
+    # It is used if `GROWTH_PK` and `VELOCITY_FAC` are not both set,\n\
+    # or `CUTSKY` = true.\n\
 \n\
 ##########################################################\n\
 #  Parameters for mock generation                        #\n\
@@ -244,26 +263,49 @@ ATTACH_PARTICLE = \n\
     # Boolean option, true for attaching tracers to DM particles whenever\n\
     # possible (unset: %c).\n\
 \n\
+##########################################\n\
+# Configurations for the survey geometry #\n\
+##########################################\n\
+\n\
+CUTSKY          = \n\
+    # Boolean option, true for generating the cutsky mock catalog (unset: %c).\n\
+DESI_Y5_FOOT    = \n\
+    # String, filename of a Mangle polygon file for the DESI Y5 footprint.\n\
+    # See https://space.mit.edu/~molly/mangle/manual/polygon.html\n\
+    # It is only used if `CUTSKY` = true.\n\
+DESI_NOW_FOOT   = \n\
+    # String, filename for the polygon footrpint of current DESI data release.\n\
+    # If it is unset, only the Y5 footprint will be applied.\n\
+    # It is only used if `CUTSKY` = true.\n\
+GALACTIC_CAP    = \n\
+    # Character, 'N' for northern galactic cap and 'S' for the southern cap.\n\
+    # It is only used if `CUTSKY` = true.\n\
+CUTSKY_ZMIN     = \n\
+CUTSKY_ZMAX     = \n\
+    # Double-precision numbers, minimum and maximum redshifts of the output\n\
+    # cutsky catalog.\n\
+    # They are only used if `CUTSKY` = true.\n\
+\n\
 ##############################\n\
 #  Settings for the outputs  #\n\
 ##############################\n\
 \n\
 OUTPUT          = \n\
-    # String, name of the output mock catalogue.\n"
-"OUTPUT_FORMAT   = \n\
+    # String, name of the output mock catalog.\n\
+    # It is not mandatory if `CUTSKY` = true, then no cubic mock will be saved.\n\
+OUTPUT_CUTSKY   = \n\
+    # String, name of the output cutsky mock catalog.\n\
+    # It is only used if `CUTSKY` = true.\n\
+OUTPUT_FORMAT   = \n\
     # Integer, format of the output catalog (unset: %d). Allowed values are:\n\
     # %d: ASCII text file"
 #ifdef WITH_CFITSIO
 ";\n    # %d: FITS binary table"
-  #if EZMOCK_FITS_CHUNK_PER_SIDE <= 1
-    ".\n"
-  #else
-    ", with %d subboxes.\n"
+  #if EZMOCK_FITS_CHUNK_PER_SIDE > 1
+    ", with %d subboxes for the cubic catalog"
   #endif
-#else
-    ".\n"
 #endif
-"OUTPUT_HEADER   = \n\
+".\nOUTPUT_HEADER   = \n\
     # Boolean option, true for saving configurations in the output (unset: %c).\n\
 OVERWRITE       = \n\
     # Integer, indicate whether to overwrite existing files (unset: %d).\n\
@@ -278,7 +320,7 @@ VERBOSE         = \n\
   DEFAULT_FIX_AMPLITUDE ? 'T' : 'F', DEFAULT_INVERT_PHASE ? 'T' : 'F',
   (double) DEFAULT_OMEGA_NU, (double) DEFAULT_EOS_W,
   (double) DEFAULT_BAO_ENHANCE, DEFAULT_ATTACH_PARTICLE ? 'T' : 'F',
-  DEFAULT_OUTPUT_FORMAT, EZMOCK_OFMT_ASCII,
+  DEFAULT_CUTSKY ? 'T' : 'F', DEFAULT_OUTPUT_FORMAT, EZMOCK_OFMT_ASCII,
 #ifdef WITH_CFITSIO
   EZMOCK_OFMT_FITS,
 #if EZMOCK_FITS_CHUNK_PER_SIDE > 1
@@ -306,6 +348,7 @@ static CONF *conf_init(void) {
   CONF *conf = calloc(1, sizeof *conf);
   if (!conf) return NULL;
   conf->fconf = conf->plin = conf->pnw = conf->output = NULL;
+  conf->y5foot = conf->foot = conf->cutout = NULL;
   return conf;
 }
 
@@ -359,7 +402,14 @@ static cfg_t *conf_read(CONF *conf, const int argc, char *const *argv) {
     {'B', "pdf-base"     , "PDF_BASE"       , CFG_DTYPE_DBL , &conf->pdf_base},
     {'S', "sigma-v"      , "SIGMA_VELOCITY" , CFG_DTYPE_DBL , &conf->sigv    },
     {'A', "attach-part"  , "ATTACH_PARTICLE", CFG_DTYPE_BOOL, &conf->particle},
+    {'u', "cutsky"       , "CUTSKY"         , CFG_DTYPE_BOOL, &conf->cutsky  },
+    { 0 , "y5-foot"      , "DESI_Y5_FOOT"   , CFG_DTYPE_STR , &conf->y5foot  },
+    {'T', "foot"         , "DESI_NOW_FOOT"  , CFG_DTYPE_STR , &conf->foot    },
+    {'G', "galactic-cap" , "GALACTIC_CAP"   , CFG_DTYPE_CHAR, &conf->gcap    },
+    { 0 , "zmin"         , "CUTSKY_ZMIN"    , CFG_DTYPE_DBL , &conf->zmin    },
+    { 0 , "zmax"         , "CUTSKY_ZMAX"    , CFG_DTYPE_DBL , &conf->zmax    },
     {'o', "output"       , "OUTPUT"         , CFG_DTYPE_STR , &conf->output  },
+    {'O', "output-cutsky", "OUTPUT_CUTSKY"  , CFG_DTYPE_STR , &conf->cutout  },
     {'F', "format"       , "OUTPUT_FORMAT"  , CFG_DTYPE_INT , &conf->ofmt    },
     { 0 , "output-header", "OUTPUT_HEADER"  , CFG_DTYPE_BOOL, &conf->header  },
     {'w', "overwrite"    , "OVERWRITE"      , CFG_DTYPE_INT , &conf->ovwrite },
@@ -647,34 +697,6 @@ static int conf_verify(const cfg_t *cfg, CONF *conf) {
       P_ERR(FMT_KEY(REDSHIFT_PK) " must be >= 0\n");
       return EZMOCK_ERR_CFG;
     }
-
-    /* Check OMEGA_M. */
-    CHECK_EXIST_PARAM(OMEGA_M, cfg, &conf->omega_m);
-    if (conf->omega_m <= 0 || conf->omega_m > 1) {
-      P_ERR(FMT_KEY(OMEGA_M) " must be > 0 and <= 1\n");
-      return EZMOCK_ERR_CFG;
-    }
-
-    /* Check OMEGA_NU. */
-    if (!cfg_is_set(cfg, &conf->omega_nu)) conf->omega_nu = DEFAULT_OMEGA_NU;
-    if (conf->omega_nu < 0 || conf->omega_nu >= 1) {
-      P_ERR(FMT_KEY(OMEGA_NU) " must be >= 0 and < 1\n");
-      return EZMOCK_ERR_CFG;
-    }
-
-    /* Check DE_EOS_W. */
-    if (!cfg_is_set(cfg, &conf->eos_w)) conf->eos_w = DEFAULT_EOS_W;
-    if (conf->eos_w > -0x1.5555555555555p-2) {
-      P_ERR(FMT_KEY(DE_EOS_W) " must be <= -1/3\n");
-      return EZMOCK_ERR_CFG;
-    }
-
-    /* Check REDSHIFT. */
-    CHECK_EXIST_PARAM(REDSHIFT, cfg, &conf->redshift);
-    if (conf->redshift < 0) {
-      P_ERR(FMT_KEY(REDSHIFT) " must be >= 0\n");
-      return EZMOCK_ERR_CFG;
-    }
   }
 
   /* Check BAO_ENHANCE. */
@@ -717,24 +739,95 @@ static int conf_verify(const cfg_t *cfg, CONF *conf) {
   if (!cfg_is_set(cfg, &conf->particle))
     conf->particle = DEFAULT_ATTACH_PARTICLE;
 
+  /* Check CUTSKY. */
+  if (!cfg_is_set(cfg, &conf->cutsky)) conf->cutsky = DEFAULT_CUTSKY;
+
+  /* Check cosmological parameters. */
+  if (conf->eval_growth || conf->cutsky) {
+    /* Check OMEGA_M. */
+    CHECK_EXIST_PARAM(OMEGA_M, cfg, &conf->omega_m);
+    if (conf->omega_m <= 0 || conf->omega_m > 1) {
+      P_ERR(FMT_KEY(OMEGA_M) " must be > 0 and <= 1\n");
+      return EZMOCK_ERR_CFG;
+    }
+
+    /* Check OMEGA_NU. */
+    if (!cfg_is_set(cfg, &conf->omega_nu)) conf->omega_nu = DEFAULT_OMEGA_NU;
+    if (conf->omega_nu < 0 || conf->omega_nu >= 1) {
+      P_ERR(FMT_KEY(OMEGA_NU) " must be >= 0 and < 1\n");
+      return EZMOCK_ERR_CFG;
+    }
+
+    /* Check DE_EOS_W. */
+    if (!cfg_is_set(cfg, &conf->eos_w)) conf->eos_w = DEFAULT_EOS_W;
+    if (conf->eos_w > -0x1.5555555555555p-2) {
+      P_ERR(FMT_KEY(DE_EOS_W) " must be <= -1/3\n");
+      return EZMOCK_ERR_CFG;
+    }
+
+    /* Check REDSHIFT. */
+    CHECK_EXIST_PARAM(REDSHIFT, cfg, &conf->redshift);
+    if (conf->redshift < 0) {
+      P_ERR(FMT_KEY(REDSHIFT) " must be >= 0\n");
+      return EZMOCK_ERR_CFG;
+    }
+  }
+
+  if (conf->cutsky) {
+    /* Check DESI_Y5_FOOT. */
+    CHECK_EXIST_PARAM(DESI_Y5_FOOT, cfg, &conf->y5foot);
+    if ((e = check_input(conf->y5foot, "DESI_Y5_FOOT"))) return e;
+
+    /* Check DESI_NOW_FOOT. */
+    if (cfg_is_set(cfg, &conf->foot)) {
+      if ((e = check_input(conf->foot, "DESI_NOW_FOOT"))) return e;
+    }
+
+    /* Check GALACTIC_CAP. */
+    CHECK_EXIST_PARAM(GALACTIC_CAP, cfg, &conf->gcap);
+    if (conf->gcap != 'N' && conf->gcap != 'n' &&
+        conf->gcap != 'S' && conf->gcap != 's') {
+      P_ERR(FMT_KEY(GALACTIC_CAP) " must be 'N' or 'S'\n");
+      return EZMOCK_ERR_CFG;
+    }
+
+    /* Check CUTSKY_ZMIN and CUTSKY_ZMAX. */
+    CHECK_EXIST_PARAM(CUTSKY_ZMIN, cfg, &conf->zmin);
+    CHECK_EXIST_PARAM(CUTSKY_ZMAX, cfg, &conf->zmax);
+    if (conf->zmin < 0 || conf->zmin >= conf->zmax) {
+      P_ERR(FMT_KEY(CUTSKY_ZMIN) " must be >= 0 and < " FMT_KEY(CUTSKY_ZMAX)
+          "\n");
+      return EZMOCK_ERR_CFG;
+    }
+  }
+
   /* Check OVERWRITE. */
   if (!cfg_is_set(cfg, &conf->ovwrite)) conf->ovwrite = DEFAULT_OVERWRITE;
 
-  /* Check OUTPUT. */
-  CHECK_EXIST_PARAM(OUTPUT, cfg, &conf->output);
+  /* Check OUTPUT and OUTPUT_CUTSKY. */
+  if (conf->cutsky) {
+    CHECK_EXIST_PARAM(OUTPUT_CUTSKY, cfg, &conf->cutout);
+    if ((e = check_output(conf->cutout, "OUTPUT_CUTSKY", conf->ovwrite)))
+      return e;
+  }
+  else CHECK_EXIST_PARAM(OUTPUT, cfg, &conf->output);
 
   /* Check OUTPUT_FORMAT. */
   if (!cfg_is_set(cfg, &conf->ofmt)) conf->ofmt = DEFAULT_OUTPUT_FORMAT;
   switch (conf->ofmt) {
     case EZMOCK_OFMT_ASCII:
       /* Check OUTPUT. */
-      if ((e = check_output(conf->output, "OUTPUT", conf->ovwrite))) return e;
+      if (cfg_is_set(cfg, &conf->output)) {
+        if ((e = check_output(conf->output, "OUTPUT", conf->ovwrite))) return e;
+      }
       break;
     case EZMOCK_OFMT_FITS:
 #ifdef WITH_CFITSIO
       /* Check OUTPUT. */
-      if ((e = check_output_fits(conf->output, "OUTPUT", conf->ovwrite)))
-        return e;
+      if (cfg_is_set(cfg, &conf->output)) {
+        if ((e = check_output_fits(conf->output, "OUTPUT", conf->ovwrite)))
+          return e;
+      }
       break;
 #else
       P_ERR("FITS-format support not enabled.\n"
@@ -803,7 +896,7 @@ static void conf_print(const CONF *conf) {
     printf("\n  GROWTH_PK       = " OFMT_DBL, conf->growth2);
     printf("\n  VELOCITY_FAC    = " OFMT_DBL, conf->vfac);
   }
-  else {
+  if (conf->eval_growth || conf->cutsky) {
     printf("\n  OMEGA_M         = " OFMT_DBL, conf->omega_m);
     printf("\n  OMEGA_NU        = " OFMT_DBL, conf->omega_nu);
     printf("\n  DE_EOS_W        = " OFMT_DBL, conf->eos_w);
@@ -818,8 +911,19 @@ static void conf_print(const CONF *conf) {
   printf("\n  SIGMA_VELOCITY  = " OFMT_DBL, conf->sigv);
   printf("\n  ATTACH_PARTICLE = %c", conf->particle ? 'T' : 'F');
 
+  /* Cutsky parameters. */
+  printf("\n  CUTSKY          = %c", conf->cutsky ? 'T' : 'F');
+  if (conf->cutsky) {
+    printf("\n  DESI_Y5_FOOT    = %s", conf->y5foot);
+    if (conf->foot) printf("\n  DESI_NOW_FOOT   = %s", conf->foot);
+    printf("\n  GALACTIC_CAP    = %c", conf->gcap);
+    printf("\n  CUTSKY_ZMIN     = " OFMT_DBL, conf->zmin);
+    printf("\n  CUTSKY_ZMAX     = " OFMT_DBL, conf->zmax);
+  }
+
   /* Output. */
-  printf("\n  OUTPUT          = %s", conf->output);
+  if (conf->output) printf("\n  OUTPUT          = %s", conf->output);
+  if (conf->cutsky) printf("\n  OUTPUT_CUTSKY   = %s", conf->cutout);
   const char *ofmt_name[2] = {"ASCII", "FITS"};
   printf("\n  OUTPUT_FORMAT   = %d (%s)", conf->ofmt, ofmt_name[conf->ofmt]);
   printf("\n  OUTPUT_HEADER   = %c", conf->header ? 'T' : 'F');
@@ -882,7 +986,10 @@ void conf_destroy(CONF *conf) {
   if (!conf) return;
   if (conf->plin) free(conf->plin);
   if (conf->pnw) free(conf->pnw);
+  if (conf->y5foot) free(conf->y5foot);
+  if (conf->foot) free(conf->foot);
   if (conf->output) free(conf->output);
+  if (conf->cutout) free(conf->cutout);
   free(conf);
 }
 

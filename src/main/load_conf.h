@@ -63,7 +63,14 @@ typedef struct {
   double pdf_base;      /* PDF_BASE        */
   double sigv;          /* SIGMA_VELOCITY  */
   bool particle;        /* ATTACH_PARTICLE */
+  bool cutsky;          /* CUTSKY          */
+  char *y5foot;         /* DESI_Y5_FOOT    */
+  char *foot;           /* DESI_NOW_FOOT   */
+  char gcap;            /* GALACTIC_CAP    */
+  double zmin;          /* CUTSKY_ZMIN     */
+  double zmax;          /* CUTSKY_ZMAX     */
   char *output;         /* OUTPUT          */
+  char *cutout;         /* OUTPUT_CUTSKY   */
   int ofmt;             /* OUTPUT_FORMAT   */
   bool header;          /* OUTPUT_HEADER   */
   int ovwrite;          /* OVERWRITE       */

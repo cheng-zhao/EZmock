@@ -65,7 +65,7 @@ Return:
 static int save_box_ascii(CONF *conf, const real *x, const real *y,
     const real *z, const real *vx, const real *vy, const real *vz,
     const size_t ndata) {
-  /* Initialise the interface for writing files. */
+  /* Initialise the interface for writing the file. */
   OFILE *ofile = output_init();
   if (!ofile) return EZMOCK_ERR_FILE;
   if (output_newfile(ofile, conf->output)) {
@@ -102,6 +102,76 @@ static int save_box_ascii(CONF *conf, const real *x, const real *y,
   return 0;
 }
 
+/******************************************************************************
+Function `save_cutsky_ascii`:
+  Write the cut-sky tracer catalogue to an ASCII file.
+Arguments:
+  * `conf`:     structure for storing configurations;
+  * `data`:     instance of the cut-sky catalogue.
+Return:
+  Zero on success; non-zero on error.
+******************************************************************************/
+static int save_cutsky_ascii(const CONF *conf, const CDATA *data) {
+  /* Initialise the interface for writing the file. */
+  OFILE *ofile = output_init();
+  if (!ofile) return EZMOCK_ERR_FILE;
+  if (output_newfile(ofile, conf->cutout)) {
+    output_destroy(ofile);
+    return EZMOCK_ERR_FILE;
+  }
+
+  /* Write header. */
+  if (conf->header) {
+    WRITE_LINE(ofile, "%c BOX_SIZE=" OFMT_DBL " , NUM_GRID=%d , "
+        "FIX_AMPLITUDE=%c , INVERT_PHASE=%c\n",
+        EZMOCK_SAVE_COMMENT, conf->Lbox, conf->Ngrid,
+        conf->fixamp ? 'T' : 'F', conf->iphase ? 'T' : 'F');
+    WRITE_LINE(ofile, "%c GROWTH_PK=" OFMT_DBL " , VELOCITY_FAC=" OFMT_DBL "\n"
+        "%c OMEGA_M=" OFMT_DBL " , OMEGA_NU=" OFMT_DBL " , DE_EOS_W=" OFMT_DBL
+        "\n",
+        EZMOCK_SAVE_COMMENT, conf->growth2, conf->vfac,
+        EZMOCK_SAVE_COMMENT, conf->omega_m, conf->omega_nu, conf->eos_w);
+    const char *rng_name[2] = {"MRG32K3A", "MT19937"};
+    WRITE_LINE(ofile, "%c BAO_ENHANCE=" OFMT_DBL " , RHO_CRITICAL=" OFMT_DBL
+        " , RHO_EXP=" OFMT_DBL " , PDF_BASE=" OFMT_DBL " , SIGMA_VELOCITY="
+        OFMT_DBL "\n%c RAND_GENERATOR=%s , RAND_SEED=%ld\n",
+        EZMOCK_SAVE_COMMENT, conf->bao_mod, conf->rho_c, conf->rho_exp,
+        conf->pdf_base, conf->sigv, EZMOCK_SAVE_COMMENT,
+        rng_name[conf->rng], conf->seed);
+    WRITE_LINE(ofile, "%c REDSHIFT=" OFMT_DBL " , REDSHIFT_MIN=" OFMT_DBL
+        " , REDSHIFT_MAX=" OFMT_DBL " , GALACTIC_CAP=%cGC\n",
+        EZMOCK_SAVE_COMMENT, conf->redshift, conf->zmin, conf->zmax,
+        conf->gcap);
+    if (conf->foot) {
+      WRITE_LINE(ofile, "%c RA(1) DEC(2) Z(3) Z_COSMO(4) RAN_NUM_0_1(5) "
+          "STATUS(6)\n", EZMOCK_SAVE_COMMENT);
+    }
+    else {
+      WRITE_LINE(ofile, "%c RA(1) DEC(2) Z(3) Z_COSMO(4) RAN_NUM_0_1(5)\n",
+          EZMOCK_SAVE_COMMENT);
+    }
+  }
+
+  /* Write the catalogue. */
+  if (conf->foot) {
+    for (size_t i = 0; i < data->n; i++) {
+      WRITE_LINE(ofile, REAL_OFMT " " REAL_OFMT " " REAL_OFMT " " REAL_OFMT " "
+          REAL_OFMT " %d\n", data->x[0][i], data->x[1][i], data->x[2][i],
+          data->x[3][i], data->rand[i], data->status[i])
+    }
+  }
+  else {
+    for (size_t i = 0; i < data->n; i++) {
+      WRITE_LINE(ofile, REAL_OFMT " " REAL_OFMT " " REAL_OFMT " " REAL_OFMT " "
+          REAL_OFMT "\n", data->x[0][i], data->x[1][i], data->x[2][i],
+          data->x[3][i], data->rand[i]);
+    }
+  }
+
+  output_destroy(ofile);
+  return 0;
+}
+
 #ifdef WITH_CFITSIO
 /******************************************************************************
 Function `save_chunk_fits`:
@@ -115,12 +185,16 @@ Arguments:
   * `vx`:       array for the peculiar velocities along the x direction;
   * `vy`:       array for the peculiar velocities along the y direction;
   * `vz`:       array for the peculiar velocities along the z direction;
-  * `ndata`:    number of tracers in the tracer catalogue.
+  * `ndata`:    number of tracers in the chunk;
+  * `ntot`:     number of tracers in total;
+  * `chk_id`:   index of the chunk;
+  * `nchk`:     number of chunks in total.
 Return:
   Zero on success; non-zero on error.
 ******************************************************************************/
 static int save_chunk_fits(CONF *conf, const char *fname, real *x, real *y,
-    real *z, real *vx, real *vy, real *vz, const size_t ndata) {
+    real *z, real *vx, real *vy, real *vz, const size_t ndata,
+    const size_t ntot, int chk_id, int nchk) {
   fitsfile *fp = NULL;
   int status = 0;
 
@@ -155,8 +229,15 @@ static int save_chunk_fits(CONF *conf, const char *fname, real *x, real *y,
 
   /* Write the header unit. */
   if (conf->header) {
+    size_t ntracer = ntot;
     char *rng_name[2] = {"MRG32K3A", "MT19937"};
-    if (fits_write_key(fp, TDOUBLE  , "BOX_SIZE", &conf->Lbox,
+    if (fits_write_key(fp, TLONGLONG, "NUM_TOT" , &ntracer,
+            "total number of tracers"                           , &status) ||
+        fits_write_key(fp, TINT     , "CHUNK_ID", &chk_id,
+            "index of the chunk of the catalog (from 1)"        , &status) ||
+        fits_write_key(fp, TINT     , "NCHUNK"  , &nchk,
+            "total number of chunks"                            , &status) ||
+        fits_write_key(fp, TDOUBLE  , "BOX_SIZE", &conf->Lbox,
             "side length of the periodic box"                   , &status) ||
         fits_write_key(fp, TINT     , "NUM_GRID", &conf->Ngrid,
             "number of grid cells per box size"                 , &status) ||
@@ -200,6 +281,7 @@ static int save_chunk_fits(CONF *conf, const char *fname, real *x, real *y,
       (void **) nulval, &status)) FITS_ABORT;
 
   if (fits_close_file(fp, &status)) {
+    P_ERR("cfitsio error: ");
     fits_report_error(stderr, status);
     return EZMOCK_ERR_FILE;
   }
@@ -227,8 +309,10 @@ static int save_box_fits(CONF *conf, real *x, real *y, real *z,
   const int nside = EZMOCK_FITS_CHUNK_PER_SIDE;
 
   /* Save the catalogue as a whole if no chunk is needed. */
-  if (nside <= 1)
-    return save_chunk_fits(conf, conf->output, x, y, z, vx, vy, vz, ndata);
+  if (nside <= 1) {
+    return save_chunk_fits(conf, conf->output, x, y, z, vx, vy, vz, ndata,
+        ndata, 1, 1);
+  }
 
   /* Allocate memory for counting tracers per chunk. */
   const int nchunk = nside * nside * nside;
@@ -375,12 +459,161 @@ static int save_box_fits(CONF *conf, real *x, real *y, real *z,
 
     /* Save chunk of the data catalogue. */
     int e = save_chunk_fits(conf, fname, x + idx[i], y + idx[i], z + idx[i],
-        vx + idx[i], vy + idx[i], vz + idx[i], cnt[i]);
+        vx + idx[i], vy + idx[i], vz + idx[i], cnt[i], ndata, i + 1, nchunk);
     if (e) return e;
   }
 
   free(fname);
   free(cnt);
+  return 0;
+}
+
+/******************************************************************************
+Function `save_cutsky_fits`:
+  Write the cut-sky tracer catalogue to a FITS file.
+Arguments:
+  * `conf`:     structure for storing configurations;
+  * `data`:     instance of the cut-sky catalogue.
+Return:
+  Zero on success; non-zero on error.
+******************************************************************************/
+static int save_cutsky_fits(CONF *conf, CDATA *data) {
+  /* Allocate memory for the filename. */
+  const size_t len = strlen(conf->cutout) + 1;
+  char *fname = malloc(len + 1);
+  if (!fname) {
+    P_ERR("failed to allocate memory for saving the catalog\n");
+    return EZMOCK_ERR_MEMORY;
+  }
+  fname[0] = '!';
+  strncpy(fname + 1, conf->cutout, len);
+
+  /* Create the FITS file. */
+  fitsfile *fp = NULL;
+  int status = 0;
+  if (fits_create_file(&fp, fname, &status)) {
+    free(fname);
+    FITS_ABORT;
+  }
+  free(fname);
+
+  /* Create an empty table. */
+  char *names[] = {"RA", "DEC", "Z", "Z_COSMO", "RAN_NUM_0_1", "STATUS"};
+  char *units[] = {"deg", "deg", NULL, NULL, NULL, NULL};
+  char *cfmt[6];
+  int dtypes[6];
+  switch (sizeof(real)) {
+    case 4:
+      for (int i = 0; i < 5; i++) {
+        cfmt[i] = "1E";
+        dtypes[i] = TFLOAT;
+      }
+      break;
+    case 8:
+      for (int i = 0; i < 5; i++) {
+        cfmt[i] = "1D";
+        dtypes[i] = TDOUBLE;
+      }
+      break;
+    default:
+      P_ERR("invalid data type for floating point numbers\n");
+      return EZMOCK_ERR_UNKNOWN;
+  }
+  switch (sizeof *(data->status)) {
+    case 1:
+      cfmt[5] = "1B";
+      dtypes[5] = TBYTE;
+      break;
+    case 2:
+      cfmt[5] = "1I";
+      dtypes[5] = TUSHORT;
+      break;
+    case 4:
+      cfmt[5] = "1J";
+      dtypes[5] = TINT32BIT;
+      break;
+    case 8:
+      cfmt[5] = "1K";
+      dtypes[5] = TULONGLONG;
+      break;
+    default:
+      P_ERR("invalid data type for the bit-code of cut-sky catalog\n");
+      return EZMOCK_ERR_UNKNOWN;
+  }
+
+  const int ncol = (conf->foot) ? 6 : 5;
+  if (fits_create_tbl(fp, BINARY_TBL, 0, ncol, names, cfmt, units, NULL,
+      &status)) FITS_ABORT;
+
+  /* Write the header unit. */
+  if (conf->header) {
+    char *rng_name[2] = {"MRG32K3A", "MT19937"};
+    char gcap[] = "?GC";
+    if (conf->gcap == 'N' || conf->gcap == 'n') gcap[0] = 'N';
+    else gcap[0] = 'S';
+
+    if (fits_write_key(fp, TDOUBLE  , "BOX_SIZE", &conf->Lbox,
+            "side length of the periodic box"                   , &status) ||
+        fits_write_key(fp, TINT     , "NUM_GRID", &conf->Ngrid,
+            "number of grid cells per box size"                 , &status) ||
+        fits_write_key(fp, TLOGICAL , "FIX_AMP" , &conf->fixamp,
+            "fix amplitude of initial white noise"              , &status) ||
+        fits_write_key(fp, TLOGICAL , "INV_PH"  , &conf->iphase,
+            "invert phase of initial white noise"               , &status) ||
+        fits_write_key(fp, TDOUBLE  , "GROW_PK" , &conf->growth2,
+            "normalization factor of the power spectrum"        , &status) ||
+        fits_write_key(fp, TDOUBLE  , "VEL_FAC" , &conf->vfac,
+            "ratio of peculiar velocity to displacement"        , &status) ||
+        fits_write_key(fp, TDOUBLE  , "OMEGA_M" , &conf->omega_m,
+            "matter (w/o neutrino) density parameter"           , &status) ||
+        fits_write_key(fp, TDOUBLE  , "OMEGA_NU", &conf->omega_nu,
+            "neutrino density parameter"                        , &status) ||
+        fits_write_key(fp, TDOUBLE  , "DE_W"    , &conf->eos_w,
+            "dark energy equation of state"                     , &status) ||
+        fits_write_key(fp, TDOUBLE  , "BAO_MOD" , &conf->bao_mod,
+            "BAO enhancement parameter"                         , &status) ||
+        fits_write_key(fp, TDOUBLE  , "RHO_CUT" , &conf->rho_c,
+            "critical density parameter"                        , &status) ||
+        fits_write_key(fp, TDOUBLE  , "RHO_EXP" , &conf->rho_exp,
+            "expotential cut-off of the bias model"             , &status) ||
+        fits_write_key(fp, TDOUBLE  , "PDF_BASE", &conf->pdf_base,
+            "base of the power-law tracer PDF"                  , &status) ||
+        fits_write_key(fp, TDOUBLE  , "SIGMA_V" , &conf->sigv,
+            "standard devition of random local motion"          , &status) ||
+        fits_write_key(fp, TSTRING  , "RAN_GEN" , rng_name[conf->rng],
+            "random number generator"                           , &status) ||
+        fits_write_key(fp, TLONGLONG, "RAN_SEED", &conf->seed,
+            "random seed"                                       , &status) ||
+        fits_write_key(fp, TDOUBLE  , "REDSHIFT", &conf->redshift,
+            "redshift snapshot of the catalog"                  , &status) ||
+        fits_write_key(fp, TDOUBLE  , "Z_MIN"   , &conf->zmin,
+            "minimum redshift of cut-sky catalog"               , &status) ||
+        fits_write_key(fp, TDOUBLE  , "Z_MAX"   , &conf->zmax,
+            "maximum redshift of cut-sky catalog"               , &status) ||
+        fits_write_key(fp, TDOUBLE  , "NUM_DENS", &data->num_dens,
+            "number density of the tracers"                     , &status) ||
+        fits_write_key(fp, TSTRING  , "GAL_CAP" , gcap,
+            "galactic cap"                                      , &status))
+      FITS_ABORT;
+  }
+
+  /* Write the cut-sky catalog. */
+  int cnums[6] = {1, 2, 3, 4, 5, 6};
+  void *nulval[6] = {NULL, NULL, NULL, NULL, NULL, NULL};
+  void *dat[6];
+  for (int i = 0; i < 4; i++) dat[i] = data->x[i];
+  dat[4] = data->rand;
+  dat[5] = data->status;
+
+  if (fits_write_cols(fp, ncol, dtypes, cnums, 1, data->n, dat, nulval,
+      &status)) FITS_ABORT;
+
+  if (fits_close_file(fp, &status)) {
+    P_ERR("cfitsio error: ");
+    fits_report_error(stderr, status);
+    return EZMOCK_ERR_FILE;
+  }
+
   return 0;
 }
 #endif
@@ -407,7 +640,7 @@ Return:
 ******************************************************************************/
 int save_box(CONF *conf, real *x, real *y, real *z,
     real *vx, real *vy, real *vz, const size_t ndata) {
-  printf("Saving the tracer catalog ...");
+  printf("Saving the cubic mock catalog ...");
   if (!conf) {
     P_ERR("configuration parameters are not loaded\n");
     return EZMOCK_ERR_INIT;
@@ -435,6 +668,48 @@ int save_box(CONF *conf, real *x, real *y, real *z,
   }
 #else
   if (save_box_ascii(conf, x, y, z, vx, vy, vz, ndata)) return EZMOCK_ERR_SAVE;
+#endif
+
+  printf(FMT_DONE);
+  return 0;
+}
+
+/******************************************************************************
+Function `save_cutsky`:
+  Write the cut-sky tracer catalogue to a file.
+Arguments:
+  * `conf`:     structure for storing configurations;
+  * `data`:     instance of the cut-sky catalogue.
+Return:
+  Zero on success; non-zero on error.
+******************************************************************************/
+int save_cutsky(CONF *conf, CDATA *data) {
+  printf("Saving the cutsky catalog ...");
+  if (!conf) {
+    P_ERR("configuration parameters are not loaded\n");
+    return EZMOCK_ERR_INIT;
+  }
+  if (!data) {
+    P_ERR("the cut-sky catalog is not generated\n");
+    return EZMOCK_ERR_INIT;
+  }
+  if (conf->verbose) printf("\n  Filename: `%s'\n", conf->cutout);
+  fflush(stdout);
+
+#ifdef WITH_CFITSIO
+  switch (conf->ofmt) {
+    case EZMOCK_OFMT_ASCII:
+      if (save_cutsky_ascii(conf, data)) return EZMOCK_ERR_SAVE;
+      break;
+    case EZMOCK_OFMT_FITS:
+      if (save_cutsky_fits(conf, data)) return EZMOCK_ERR_SAVE;
+      break;
+    default:
+      P_ERR("invalid output file format: %d\n", conf->ofmt);
+      return EZMOCK_ERR_CFG;
+  }
+#else
+  if (save_cutsky_ascii(conf, data)) return EZMOCK_ERR_SAVE;
 #endif
 
   printf(FMT_DONE);

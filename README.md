@@ -1,6 +1,7 @@
 # EZmock
 
 ![GitHub](https://img.shields.io/github/license/cheng-zhao/EZmock.svg)
+![Codacy grade](https://img.shields.io/codacy/grade/2952c648b1934e49bd1cb8acfb4fc1fa.svg)
 
 ## Table of Contents
 

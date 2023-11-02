@@ -32,9 +32,24 @@
 #define __DEFINE_H__
 
 /*============================================================================*\
+                 Definitions of mathematical/physical constants
+\*============================================================================*/
+#define SPEED_OF_LIGHT  299792.458
+#ifndef M_PI
+#define M_PI            0x1.921fb54442d18p+1    /* PI */
+#endif
+#ifndef M_E
+#define M_E             0x1.5bf0a8b145769p+1    /* e */
+#endif
+
+#define DEGREE_2_RAD    0x1.1df46a2529d39p-6    /* M_PI / 180 */
+#define RAD_2_DEGREE    0x1.ca5dc1a63c1f8p+5    /* 180 / M_PI */
+
+/*============================================================================*\
                            Definitions of data types
 \*============================================================================*/
 #define DOUBLE_EPSILON  1e-16   /* ~ machine epsilon for double numbers */
+#define DOUBLE_TOL      1e-8    /* tolerance for double number comparison */
 #ifdef SINGLE_PREC
 #define REAL_OFMT       "%.6g"
 #else
@@ -55,16 +70,34 @@
 #define DEFAULT_EOS_W                   (-1)
 #define DEFAULT_BAO_ENHANCE             0
 #define DEFAULT_ATTACH_PARTICLE         false
+#define DEFAULT_CUTSKY                  false
 #define DEFAULT_OVERWRITE               0
 #define DEFAULT_OUTPUT_FORMAT           EZMOCK_OFMT_ASCII
 #define DEFAULT_HEADER                  true
 #define DEFAULT_VERBOSE                 true
 
-#define EZMOCK_MAX_NGRID               65536
+#define EZMOCK_MAX_NGRID                65536
 
 /* Priority of parameters from different sources. */
-#define EZMOCK_PRIOR_CMD               5
-#define EZMOCK_PRIOR_FILE              1
+#define EZMOCK_PRIOR_CMD                5
+#define EZMOCK_PRIOR_FILE               1
+
+/*============================================================================*\
+                            Other runtime constants
+\*============================================================================*/
+/* Number of subvolumes per side for the output chunks. */
+#define EZMOCK_FITS_CHUNK_PER_SIDE      4
+/* Parameters for redshift conversion with cubic spline interpolation. */
+#define EZMOCK_ZCNVT_DZ         1e-3    /* interval of redshift (z) samples */
+#define EZMOCK_ZCNVT_MIN_NSP    100     /* minimum number of z samples      */
+#define EZMOCK_ZCNVT_MAX_NSP    100000  /* maximum number of z samples      */
+#define EZMOCK_ZCNVT_ORDER      10      /* order for Gauss integration of z */
+#define EZMOCK_ZCNVT_EXT        10      /* number of bins extended on edges */
+#define EZMOCK_ZCNVT_MAX_V      3000    /* maximum peculiar velocity */
+
+/* Right ascension range that distinguishes NGC and SGC. */
+#define DESI_NGC_RA_MIN         90
+#define DESI_NGC_RA_MAX         300
 
 /*============================================================================*\
                             Definitions for file IO
@@ -80,9 +113,6 @@
 #define EZMOCK_READ_COMMENT    '#'
 /* Comment symbol for the output files.                         */
 #define EZMOCK_SAVE_COMMENT    '#'
-
-/* Number of subvolumes per side for the output chunks. */
-#define EZMOCK_FITS_CHUNK_PER_SIDE      4
 
 /*============================================================================*\
                      Definitions for the format of outputs
@@ -108,6 +138,9 @@
 #define EZMOCK_ERR_RHO          (-8)
 #define EZMOCK_ERR_ASCII        (-9)
 #define EZMOCK_ERR_SAVE         (-10)
+#define EZMOCK_ERR_ZCVT         (-11)
+#define EZMOCK_ERR_CUTSKY       (-12)
+#define EZMOCK_ERR_RNG          (-13)
 #define EZMOCK_ERR_UNKNOWN      (-99)
 
 /*============================================================================*\

@@ -114,7 +114,42 @@ int main(int argc, char *argv[]) {
   conf->vfac = cosmo->vfac;
   EZmock_destroy(ez);
 
-  if (save_box(conf, x, y, z, vx, vy, vz, ntracer)) {
+  /* Do cut-sky before saving the boxes to avoid reordering. */
+  if (conf->cutsky) {
+    ZCVT *cvt;
+    if (!(cvt = zcnvt_init(conf))) {
+      printf(FMT_FAIL);
+      P_EXT("failed to setup comoving distance to redshift conversion\n");
+      conf_destroy(conf);
+      free(x); free(y); free(z);
+      free(vx); free(vy); free(vz);
+      return EZMOCK_ERR_ZCVT;
+    }
+
+    CDATA *data;
+    if (!(data = cutsky(conf, cvt, x, y, z, vx, vy, vz, ntracer))) {
+      printf(FMT_FAIL);
+      P_EXT("failed to generate the cut-sky catalog\n");
+      conf_destroy(conf);
+      zcnvt_destroy(cvt);
+      free(x); free(y); free(z);
+      free(vx); free(vy); free(vz);
+      return EZMOCK_ERR_CUTSKY;
+    }
+    zcnvt_destroy(cvt);
+    /* x, y, z, vx, vy, and vz are already freed. */
+
+    if (save_cutsky(conf, data)) {
+      printf(FMT_FAIL);
+      P_EXT("failed to save the cut-sky catalog\n");
+      conf_destroy(conf);
+      cutsky_destroy(data);
+      return EZMOCK_ERR_SAVE;
+    }
+    cutsky_destroy(data);
+  }
+
+  if (conf->output && save_box(conf, x, y, z, vx, vy, vz, ntracer)) {
     printf(FMT_FAIL);
     P_EXT("failed to save the output tracer catalog\n");
     conf_destroy(conf);
@@ -123,8 +158,8 @@ int main(int argc, char *argv[]) {
     return EZMOCK_ERR_SAVE;
   }
 
-  conf_destroy(conf);
   free(x); free(y); free(z);
   free(vx); free(vy); free(vz);
+  conf_destroy(conf);
   return 0;
 }

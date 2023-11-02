@@ -1,5 +1,5 @@
 /*******************************************************************************
-* save_res.h: this file is part of the EZmock program.
+* convert_z.h: this file is part of the EZmock program.
 
 * EZmock: Effective Zel'dovich approximation mock generator.
 
@@ -28,50 +28,60 @@
 
 *******************************************************************************/
 
-#ifndef __SAVE_RES_H__
-#define __SAVE_RES_H__
+#ifndef __CONVERT_Z_H__
+#define __CONVERT_Z_H__
 
-#include <stdio.h>
 #include "load_conf.h"
-#include "EZmock.h"
-#include "cut_sky.h"
-
-typedef enum {
-  EZMOCK_OFMT_ASCII = 0,
-  EZMOCK_OFMT_FITS
-} EZMOCK_OFMT;
 
 /*============================================================================*\
-                    Function for saving the tracer catalogue
+                     Data structure for redshift conversion
+\*============================================================================*/
+
+typedef struct {
+  int n;                /* number of distance conversion samples */
+  double d2min;         /* minimum squared distance of interest  */
+  double d2max;         /* maximum squared distance of interest  */
+  double *z;            /* array for redshift values             */
+  double *d2;           /* array for squared comoving distances  */
+  double *zpp;          /* second derivative of redshift         */
+} ZCVT;
+
+
+/*============================================================================*\
+                       Interfaces for redshift conversion
 \*============================================================================*/
 
 /******************************************************************************
-Function `save_box`:
-  Write the periodic tracer catalogue to file.
+Function `zcnvt_init`:
+  Initialise cubic spline interpolation for converting (squared) comoving
+  distances to redshifts.
 Arguments:
-  * `conf`:     structure for storing configurations;
-  * `x`:        array for the x coordinates;
-  * `y`:        array for the y coordinates;
-  * `z`:        array for the z coordinates;
-  * `vx`:       array for the peculiar velocities along the x direction;
-  * `vy`:       array for the peculiar velocities along the y direction;
-  * `vz`:       array for the peculiar velocities along the z direction;
-  * `ndata`:    number of tracers in the tracer catalogue.
+  * `conf`:     structure for storing configurations.
 Return:
-  Zero on success; non-zero on error.
+  Data structure for redshift conversion on success; NULL on error.
 ******************************************************************************/
-int save_box(CONF *conf, real *x, real *y, real *z,
-    real *vx, real *vy, real *vz, const size_t ndata);
+ZCVT *zcnvt_init(const CONF *conf);
 
 /******************************************************************************
-Function `save_cutsky`:
-  Write the cut-sky tracer catalogue to a file.
+Function `convert_z`:
+  Convert a squared radial comoving distance to redshift.
 Arguments:
-  * `conf`:     structure for storing configurations;
-  * `data`:     instance of the cut-sky catalogue.
+  * `cvt`:      structure for redshift conversion;
+  * `dist2`:    the input squared radial comoving distance.
 Return:
-  Zero on success; non-zero on error.
+  The corresponding redshift on success; HUGE_VAL on error.
 ******************************************************************************/
-int save_cutsky(CONF *conf, CDATA *data);
+double convert_z(const ZCVT *cvt, const double dist2);
+
+/******************************************************************************
+Function `zcnvt_destroy`:
+  Initialise cubic spline interpolation for converting (squared) comoving
+  distances to redshifts.
+Arguments:
+  * `conf`:     structure for storing configurations.
+Return:
+  Data structure for coordinate conversion on success; NULL on error.
+******************************************************************************/
+void zcnvt_destroy(ZCVT *cvt);
 
 #endif
