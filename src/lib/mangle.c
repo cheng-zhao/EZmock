@@ -376,7 +376,7 @@ static int *mangle_pix_idx(POLYGON *poly, const int npoly, const int res,
   for (int i = 0; i < npoly; i++) {
     int j = poly[i].pixel - pmin;
     if (j != prev) {
-      pix[j] = i;
+      for (int k = prev + 1; k <= j; k++) pix[k] = i;
       prev = j;
     }
   }
