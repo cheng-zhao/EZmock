@@ -42,7 +42,7 @@ typedef struct {
   size_t n;             /* number of tracers in the cut-sky catalogue */
   size_t cap;           /* capacity of the cut-sky catalogue          */
   real *x[4];           /* RA, Dec, redshift, real-space redshift     */
-  uint16_t *status;     /* bit-code indicating the footprint          */
+  uint8_t *status;      /* bit-code indicating the footprint          */
   real *rand;           /* random number for post-processing          */
   double num_dens;      /* number density of the catalog              */
 } CDATA;
