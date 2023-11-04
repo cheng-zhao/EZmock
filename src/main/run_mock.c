@@ -137,7 +137,6 @@ int main(int argc, char *argv[]) {
       return EZMOCK_ERR_CUTSKY;
     }
     zcnvt_destroy(cvt);
-    /* x, y, z, vx, vy, and vz are already freed. */
 
     if (save_cutsky(conf, data)) {
       printf(FMT_FAIL);

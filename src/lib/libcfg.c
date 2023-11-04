@@ -48,7 +48,6 @@
 #define CFG_SRC_NULL            0
 #define CFG_SRC_OF_OPT(x)       (-x)    /* -x for source being command line */
 #define CFG_SRC_VAL(x)          ((x < 0) ? -(x) : x)              /* abs(x) */
-#define CFG_SRC_FROM_OPT(x)     (x < 0)  /* check if source is command line */
 
 /* Definitions of error codes. */
 #define CFG_ERR_INIT            (-1)
@@ -759,32 +758,30 @@ static int cfg_get_value(void *var, char *str, const size_t size,
   char *value = str;
   int n;
 
-  /* Validate the value if it is not from command line options. */
-  if (!CFG_SRC_FROM_OPT(src)) {
-    while (*value && isspace(*value)) value++;          /* omit whitespaces */
-    if (*value == '\0') return CFG_ERR_VALUE;           /* empty string */
-    if (*value == '"' || *value == '\'') {              /* remove quotes */
-      char quote = *value;
-      value++;
-      for (n = 0; value[n]; n++) {      /* the string is surely terminated */
-        if (value[n] == quote) {
-          value[n] = '\0';
-          quote = 0;    /* a flag indicating the other quote is found */
-          break;
-        }
+  /* Validate the value. */
+  while (*value && isspace(*value)) value++;          /* omit whitespaces */
+  if (*value == '\0') return CFG_ERR_VALUE;           /* empty string */
+  if (*value == '"' || *value == '\'') {              /* remove quotes */
+    char quote = *value;
+    value++;
+    for (n = 0; value[n]; n++) {      /* the string is surely terminated */
+      if (value[n] == quote) {
+        value[n] = '\0';
+        quote = 0;    /* a flag indicating the other quote is found */
+        break;
       }
-      /* empty string with quotes is valid for char or string type variable */
-      if (*value == '\0' && dtype != CFG_DTYPE_CHAR && dtype != CFG_DTYPE_STR)
-        return CFG_ERR_VALUE;
-      if (quote) return CFG_ERR_VALUE;          /* open quotation marks */
-      for (++n; value[n]; n++) if (!isspace(value[n])) return CFG_ERR_VALUE;
     }
-    else {                              /* remove trailing whitespaces */
-      char *val = str + size - 2;
-      while (isspace(*val)) {
-        *val = '\0';
-        val--;
-      }
+    /* empty string with quotes is valid for char or string type variable */
+    if (*value == '\0' && dtype != CFG_DTYPE_CHAR && dtype != CFG_DTYPE_STR)
+      return CFG_ERR_VALUE;
+    if (quote) return CFG_ERR_VALUE;          /* open quotation marks */
+    for (++n; value[n]; n++) if (!isspace(value[n])) return CFG_ERR_VALUE;
+  }
+  else {                              /* remove trailing whitespaces */
+    char *val = str + size - 2;
+    while (isspace(*val)) {
+      *val = '\0';
+      val--;
     }
   }
 
@@ -1187,16 +1184,16 @@ int cfg_read_file(cfg_t *cfg, const char *fname, const int prior) {
     return CFG_ERRNO(cfg) = CFG_ERR_MEMORY;
   }
 
-  size_t nline, nrest, cnt;
+  size_t nline, nrest, nproc, cnt;
   char *key, *value;
   cfg_parse_state_t state = CFG_PARSE_START;
-  nline = nrest = 0;
+  nline = nrest = nproc = 0;
   key = value = NULL;
   cfg_param_valid_t *params = (cfg_param_valid_t *) cfg->params;
 
   while ((cnt = fread(chunk + nrest, sizeof(char), clen - nrest, fp))) {
-    char *p = chunk;
-    char *end = p + nrest + cnt;
+    char *p = (state == CFG_PARSE_ARRAY_START) ? chunk + nproc : chunk;
+    char *end = chunk + nrest + cnt;
     char *endl;
     if (cnt < clen - nrest) *end++ = '\n';      /* terminate the last line */
 
@@ -1291,6 +1288,7 @@ int cfg_read_file(cfg_t *cfg, const char *fname, const int prior) {
       }
       /* `key` is the starting point of this effective line */
       nrest = end - key;
+      nproc = p - key;
       memmove(chunk, key, nrest);
       /* shift `key` and `value` */
       if (value) value -= key - chunk;
@@ -1299,6 +1297,31 @@ int cfg_read_file(cfg_t *cfg, const char *fname, const int prior) {
     else {                      /* copy only from the current position */
       nrest = end - p;
       memmove(chunk, p, nrest);
+    }
+
+    /* The chunk is full. */
+    if (nrest == clen) {
+      size_t new_len = 0;
+      if (clen >= CFG_STR_MAX_DOUBLE_SIZE) {
+        if (SIZE_MAX - CFG_STR_MAX_DOUBLE_SIZE >= clen)
+          new_len = clen + CFG_STR_MAX_DOUBLE_SIZE;
+      }
+      else if (SIZE_MAX / 2 >= clen) new_len = clen << 1;
+      if (!new_len) {
+        cfg_msg(cfg, "failed to allocate memory for reading the file", fname);
+        return CFG_ERRNO(cfg) = CFG_ERR_MEMORY;
+      }
+      size_t key_shift = key ? key - chunk : 0;
+      size_t value_shift = value ? value - chunk : 0;
+      char *tmp = realloc(chunk, new_len);
+      if (!tmp) {
+        cfg_msg(cfg, "failed to allocate memory for reading the file", fname);
+        return CFG_ERRNO(cfg) = CFG_ERR_MEMORY;
+      }
+      chunk = tmp;
+      clen = new_len;
+      if (key) key = chunk + key_shift;
+      if (value) value = chunk + value_shift;
     }
   }
 
