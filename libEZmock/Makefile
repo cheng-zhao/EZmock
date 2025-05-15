@@ -33,7 +33,7 @@ SRCS = $(wildcard EZmock/*.c math/*.c prand/src/*.c)
 OBJS = $(patsubst %.c, %.o, $(SRCS))
 
 # List the compiled files
-FILES = $(strip $(wildcard $(OBJS) $(addprefix $(TOPDIR)/libEZmock,.so .a)))
+FILES = $(strip $(wildcard $(OBJS) $(addprefix libEZmock,.so .a)))
 
 # Set the installation path
 IS_ROOT := $(if $(patsubst /%,,$(INSTALL_DIR)),,yes)
@@ -47,22 +47,22 @@ endif
 all: $(TARGET)
 
 libEZmock.so: $(OBJS)
-	$(CC) $(CFLAGS) -shared -o $(TOPDIR)/$@ $^ $(INCL) $(LIBS)
+	$(CC) $(CFLAGS) -shared -o $@ $^ $(INCL) $(LIBS)
 
 libEZmock.a: $(OBJS)
-	ar rcs $(TOPDIR)/$@ $^
+	ar rcs $@ $^
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $^ -o $@ $(INCL) $(LIBS)
 
 install:
-ifneq ($(strip $(wildcard $(addprefix $(TOPDIR)/libEZmock,.so .a))),)
+ifneq ($(strip $(wildcard $(addprefix libEZmock,.so .a))),)
 	install -d $(PREFIX)/lib/
-  ifneq ($(strip $(wildcard $(TOPDIR)/libEZmock.so)),)
-	install -m 755 $(TOPDIR)/libEZmock.so $(PREFIX)/lib/
+  ifneq ($(strip $(wildcard libEZmock.so)),)
+	install -m 755 libEZmock.so $(PREFIX)/lib/
   endif
-  ifneq ($(strip $(wildcard $(TOPDIR)/libEZmock.a)),)
-	install -m 644 $(TOPDIR)/libEZmock.a $(PREFIX)/lib/
+  ifneq ($(strip $(wildcard libEZmock.a)),)
+	install -m 644 libEZmock.a $(PREFIX)/lib/
   endif
 	install -d $(PREFIX)/include/
 	install -m 644 EZmock/EZmock.h $(PREFIX)/include/

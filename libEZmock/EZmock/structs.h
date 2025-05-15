@@ -83,6 +83,8 @@ typedef struct {
 typedef struct {
   bool rho_replaced;    /* indicate if the DM density field is overwritten */
   bool psi_ref;         /* indicate if the displacements are references    */
+  bool fixamp;          /* indicate if the initial amplitudes are fixed    */
+  bool iphase;          /* indicate if the initial phases are inverted     */
   FFT_REAL *psi[3];     /* Lagrangian displacement field                   */
   FFT_CMPLX *rhok;      /* Fourier-space dark matter density field         */
   FFT_CMPLX *rhok2;     /* Fourier-space field for computing displacements */

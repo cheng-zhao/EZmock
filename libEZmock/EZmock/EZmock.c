@@ -16,7 +16,6 @@
 #include "structs.h"
 #include "config.h"
 #include "errmsg.h"
-#include "linear_pk.h"
 
 #ifdef OMP
 #include <omp.h>
@@ -69,7 +68,7 @@ EZMOCK *EZmock_init(const double Lbox, const int Ngrid, const int randgen,
   }
 
   /* Setup anonymous structures. */
-  ez->conf = ez->rng = ez->cosmo = ez->pk = ez->mesh = NULL;
+  ez->conf = ez->rng = ez->cosmo = ez->pk = ez->par = ez->mesh = NULL;
   if (!(ez->conf = malloc(sizeof(EZMOCK_CONF))) ||
       !(ez->rng = malloc(sizeof(EZMOCK_RNG)))) {
     *err = EZMOCK_ERR_MEMORY;
@@ -98,6 +97,14 @@ EZMOCK *EZmock_init(const double Lbox, const int Ngrid, const int randgen,
   EZMOCK_COSMO *cosmo = (EZMOCK_COSMO *) ez->cosmo;
   cosmo->growth2 = cosmo->vfac = HUGE_VAL;
 
+  if (!(ez->par = malloc(sizeof(EZMOCK_PAR)))) {
+    *err = EZMOCK_ERR_MEMORY;
+    EZmock_destroy(ez); return NULL;
+  }
+  EZMOCK_PAR *par = (EZMOCK_PAR *) ez->par;
+  par->bao_enhance = par->rho_c = par->rho_exp = HUGE_VAL;
+  par->pdf_base = par->sigma_v = HUGE_VAL;
+
   if (!(ez->mesh = calloc(1, sizeof(EZMOCK_MESH)))) {
     *err = EZMOCK_ERR_MEMORY;
     EZmock_destroy(ez); return NULL;
@@ -105,6 +112,7 @@ EZMOCK *EZmock_init(const double Lbox, const int Ngrid, const int randgen,
 
   EZMOCK_MESH *mesh = (EZMOCK_MESH *) ez->mesh;
   mesh->rho_replaced = mesh->psi_ref = false;
+  mesh->fixamp = mesh->iphase = false;
   mesh->psi[0] = mesh->psi[1] = mesh->psi[2] = NULL;
   mesh->rhok = mesh->rhok2 = NULL;
   mesh->rho = mesh->rhot = NULL;
@@ -128,6 +136,7 @@ void EZmock_destroy(EZMOCK *ez) {
   EZmock_rng_destroy(ez->rng);
   if (ez->cosmo) free(ez->cosmo);
   EZmock_pk_destroy(ez->pk);
+  if (ez->par) free(ez->par);
   EZmock_mesh_destroy(ez->mesh);
   free(ez);
 }

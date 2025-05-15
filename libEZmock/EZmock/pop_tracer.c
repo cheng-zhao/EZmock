@@ -1209,5 +1209,11 @@ int EZmock_populate_tracer(EZMOCK *ez, const real *params, const size_t nexp,
     return *err;
   }
 
+  EZMOCK_PAR *par = (EZMOCK_PAR *) ez->par;
+  par->rho_c = rho_c;
+  par->rho_exp = rho_exp;
+  par->pdf_base = pbase;
+  par->sigma_v = sigma_v;
+
   return EZMOCK_SUCCESS;
 }

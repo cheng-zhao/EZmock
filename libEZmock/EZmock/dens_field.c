@@ -405,6 +405,9 @@ int EZmock_create_dens_field(EZMOCK *ez, real *psi[3], bool deepcopy,
   memset(mesh->rho, 0, size);
   density_field_cic(ez);
 
+  mesh->fixamp = fixamp;
+  mesh->iphase = iphase;
+
 #ifdef EZMOCK_DEBUG
   FILE *fp = fopen("densfield.dat", "w");
   if (!fp ||

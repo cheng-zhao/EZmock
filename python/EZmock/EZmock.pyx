@@ -27,13 +27,14 @@
 # SOFTWARE.
 #
 
-cimport cEZmock
+from .cEZmock cimport *
+from libc.stdlib cimport free
 from cython.view cimport array as cvarray
 import numpy as np
 
 
 cdef class EZmock:
-  cdef cEZmock.EZMOCK *_ez
+  cdef EZMOCK *_ez
   cdef int _err
   cdef int _Ng
 
@@ -77,17 +78,17 @@ cdef class EZmock:
     # Call the C initializer.
     self._err = 0
     self._Ng = Ngrid
-    self._ez = cEZmock.EZmock_init(<double> Lbox, <int> Ngrid, <int> rng,    \
-        <cEZmock.uint64_t> seed, <int> nthread, &self._err)
+    self._ez = EZmock_init(<double> Lbox, <int> Ngrid, <int> rng,    \
+        <uint64_t> seed, <int> nthread, &self._err)
     if self._ez is NULL:
-      raise RuntimeError(cEZmock.EZmock_errmsg(self._err).decode('utf-8'))
+      raise RuntimeError(EZmock_errmsg(self._err).decode('utf-8'))
 
 
   def __dealloc__(self):
     '''
     Deconstruct the EZmock instance.
     '''
-    cEZmock.EZmock_destroy(self._ez)
+    EZmock_destroy(self._ez)
 
 
   cdef _assert_return_value(self):
@@ -96,7 +97,7 @@ cdef class EZmock:
     if an exception occurs.
     '''
     if self._err != 0:
-      raise RuntimeError(cEZmock.EZmock_errmsg(self._err).decode('utf-8'))
+      raise RuntimeError(EZmock_errmsg(self._err).decode('utf-8'))
 
 
   cpdef set_growth_params(self, const double growth_pk, const double vel_fac):
@@ -115,7 +116,7 @@ cdef class EZmock:
         growth rate, H the Hubble parameter, a the scale factor, and h the
         dimensionless Hubble parameter.
     '''
-    self._err = cEZmock.EZmock_set_cosmology(self._ez, growth_pk, vel_fac,   \
+    self._err = EZmock_set_cosmology(self._ez, growth_pk, vel_fac,   \
         False, <double> 0, <double> 0, <double> 0, <double> 0, <double> 0,   \
         &self._err)
     self._assert_return_value()
@@ -142,7 +143,7 @@ cdef class EZmock:
         Dark energy equation of state.
         Default: -1.
     '''
-    self._err = cEZmock.EZmock_set_cosmology(self._ez, <double> 0,           \
+    self._err = EZmock_set_cosmology(self._ez, <double> 0,           \
         <double> 0, True, z_out, z_pk, Omega_m, Omega_nu, w, &self._err)
     self._assert_return_value()
 
@@ -210,10 +211,10 @@ cdef class EZmock:
     cdef double[::1] Pnw_mv = Pnw
 
     if Pnw_mv is None:  # BAO_enhance = 0: no BAO enhancement
-      self._err = cEZmock.EZmock_setup_linear_pk(self._ez, &k_mv[0], nbin,   \
+      self._err = EZmock_setup_linear_pk(self._ez, &k_mv[0], nbin,   \
           &Plin_mv[0], NULL, BAO_enhance, interp_log, &self._err)
     else:
-      self._err = cEZmock.EZmock_setup_linear_pk(self._ez, &k_mv[0], nbin,   \
+      self._err = EZmock_setup_linear_pk(self._ez, &k_mv[0], nbin,   \
           &Plin_mv[0], &Pnw_mv[0], BAO_enhance, interp_log, &self._err)
     self._assert_return_value()
 
@@ -237,7 +238,7 @@ cdef class EZmock:
     ------------
     Function `setup_linear_pk`.
     '''
-    self._err = cEZmock.EZmock_create_dens_field(self._ez, NULL,            \
+    self._err = EZmock_create_dens_field(self._ez, NULL,            \
         <bint> False, NULL, fixamp, iphase, &self._err)
     self._assert_return_value()
 
@@ -259,7 +260,7 @@ cdef class EZmock:
     '''
     try:
       if not isinstance(delta, np.ndarray): delta = np.array(delta)
-      if sizeof(cEZmock.real) == 8: rtype = np.float64
+      if sizeof(real) == 8: rtype = np.float64
       else: rtype = np.float32
       delta = delta.astype(rtype)
     except:
@@ -270,9 +271,9 @@ cdef class EZmock:
 
     # Make sure that the memory is contiguous.
     if not delta.flags['C_CONTIGUOUS']: delta = np.ascontiguousarray(delta)
-    cdef cEZmock.real[::1] delta_view = delta
+    cdef real[::1] delta_view = delta
 
-    self._err = cEZmock.EZmock_create_dens_field(self._ez, NULL,             \
+    self._err = EZmock_create_dens_field(self._ez, NULL,             \
         <bint> False, &delta_view[0], <bint> False, <bint> False, &self._err)
     self._assert_return_value()
 
@@ -299,7 +300,7 @@ cdef class EZmock:
       if not isinstance(dx, np.ndarray): dx = np.array(dx)
       if not isinstance(dy, np.ndarray): dy = np.array(dy)
       if not isinstance(dz, np.ndarray): dz = np.array(dz)
-      if sizeof(cEZmock.real) == 8: rtype = np.float64
+      if sizeof(real) == 8: rtype = np.float64
       else: rtype = np.float32
       dx = dx.astype(rtype)
       dy = dy.astype(rtype)
@@ -316,15 +317,15 @@ cdef class EZmock:
     if not dx.flags['C_CONTIGUOUS']: dx = np.ascontiguousarray(dx)
     if not dy.flags['C_CONTIGUOUS']: dy = np.ascontiguousarray(dy)
     if not dz.flags['C_CONTIGUOUS']: dz = np.ascontiguousarray(dz)
-    cdef cEZmock.real[::1] dx_view = dx
-    cdef cEZmock.real[::1] dy_view = dy
-    cdef cEZmock.real[::1] dz_view = dz
+    cdef real[::1] dx_view = dx
+    cdef real[::1] dy_view = dy
+    cdef real[::1] dz_view = dz
 
-    cdef cEZmock.real *disp[3]
+    cdef real *disp[3]
     disp[0] = &dx_view[0]
     disp[1] = &dy_view[0]
     disp[2] = &dz_view[0]
-    self._err = cEZmock.EZmock_create_dens_field(self._ez, disp, deepcopy,   \
+    self._err = EZmock_create_dens_field(self._ez, disp, deepcopy,   \
         NULL, <bint> False, <bint> False, &self._err)
     self._assert_return_value()
 
@@ -370,30 +371,30 @@ cdef class EZmock:
     ---------
     https://arxiv.org/abs/2007.08997
     '''
-    cdef cEZmock.real params[4]
+    cdef real params[4]
     params[0] = rho_c
     params[1] = rho_exp
     params[2] = pdf_base
     params[3] = sigma_v
 
-    cdef cEZmock.real *x
-    cdef cEZmock.real *y
-    cdef cEZmock.real *z
-    cdef cEZmock.real *vx
-    cdef cEZmock.real *vy
-    cdef cEZmock.real *vz
+    cdef real *x
+    cdef real *y
+    cdef real *z
+    cdef real *vx
+    cdef real *vy
+    cdef real *vz
     cdef size_t num
-    self._err = cEZmock.EZmock_populate_tracer(self._ez, params, ntracer,    \
+    self._err = EZmock_populate_tracer(self._ez, params, ntracer,    \
         att_part, &num, &x, &y, &z, &vx, &vy, &vz, &self._err)
     self._assert_return_value()
 
     # Convert the cython arrays into numpy arrays.
-    cdef cvarray ax  = <cEZmock.real[:num]> x
-    cdef cvarray ay  = <cEZmock.real[:num]> y
-    cdef cvarray az  = <cEZmock.real[:num]> z
-    cdef cvarray avx = <cEZmock.real[:num]> vx
-    cdef cvarray avy = <cEZmock.real[:num]> vy
-    cdef cvarray avz = <cEZmock.real[:num]> vz
+    cdef cvarray ax  = <real[:num]> x
+    cdef cvarray ay  = <real[:num]> y
+    cdef cvarray az  = <real[:num]> z
+    cdef cvarray avx = <real[:num]> vx
+    cdef cvarray avy = <real[:num]> vy
+    cdef cvarray avz = <real[:num]> vz
 
     ax.free_data = True
     ay.free_data = True
@@ -405,3 +406,80 @@ cdef class EZmock:
     return np.asarray(ax), np.asarray(ay), np.asarray(az),                   \
         np.asarray(avx), np.asarray(avy), np.asarray(avz)
 
+
+  cpdef populate_tracer_to_file(self, const double rho_c,                    \
+      const double rho_exp, const double pdf_base, const double sigma_v,     \
+      const size_t ntracer, str fname, bint att_part = False,                \
+      double rsd_fac = 0, bint header = True):
+    '''
+    Generate the EZmock tracer catalog based on the density field and
+    effective tracer bias model, then save the catalog to an ASCII file.
+
+    Parameters
+    ----------
+    rho_c: float
+        Critical dark matter density as the threshold of tracer formation.
+        See Eq. (16) of the reference. Allowed range: [0, infty).
+    rho_exp: float
+        Exponential cut-off of the effective bias model.
+        See Eq. (16) of the reference. Allowed range: (0, infty).
+    pdf_base: float
+        Base number of the power-law tracer probability distribution function.
+        See Eq. (18) of the reference. Allowed range: (0, 1).
+    sigma_v: float
+        Standard deviation for random local peculiar motions.
+        See Eq. (24) of the reference. Allowed range: [0, infty).
+    ntracer: int
+        The expected number of tracers to be generated.
+    fname: str
+        Filename of the output tracer catalog.
+    att_part: boolean, optional
+        True for attaching tracers to dark matter partciles whenever possible.
+        Default: False.
+    rsd_fac: double, optional
+        Positive for multiplying this factor to the z-velocity for
+        redshift-space z coordinate, then write the redshift-space coordinates;
+        otherwise, write the real-space coordinates and velocities.
+        Default: 0.
+    header: boolean, optional
+        True for writing the header to the output file.
+        Default: True.
+
+    Prerequisite
+    ------------
+    Function `create_dens_field_from_ic` or `create_dens_field_from_wn`
+    or `create_dens_field_from_disp`.
+
+    Reference
+    ---------
+    https://arxiv.org/abs/2007.08997
+    '''
+    cdef real params[4]
+    params[0] = rho_c
+    params[1] = rho_exp
+    params[2] = pdf_base
+    params[3] = sigma_v
+
+    cdef real *x
+    cdef real *y
+    cdef real *z
+    cdef real *vx
+    cdef real *vy
+    cdef real *vz
+    cdef size_t num
+    self._err = EZmock_populate_tracer(self._ez, params, ntracer,    \
+        att_part, &num, &x, &y, &z, &vx, &vy, &vz, &self._err)
+    self._assert_return_value()
+
+    cdef bytes bfname = fname.encode('utf-8')
+    cdef const char *cfname = bfname
+    self._err = EZmock_write_ascii(self._ez, x, y, z, vx, vy, vz,    \
+        num, rsd_fac, header, cfname, &self._err)
+    self._assert_return_value()
+
+    free(x)
+    free(y)
+    free(z)
+    free(vx)
+    free(vy)
+    free(vz)

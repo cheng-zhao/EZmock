@@ -13,7 +13,6 @@
 #include "define.h"
 #include "save_res.h"
 #include "write_file.h"
-#include "structs.h"
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>

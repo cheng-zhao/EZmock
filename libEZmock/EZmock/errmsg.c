@@ -41,6 +41,8 @@ const char *EZmock_errmsg(const int err) {
     case EZMOCK_ERR_ARG_LOWEXP: return "too few expected number of tracers";
     case EZMOCK_ERR_ARG_HIEXP:  return "too many expected number of tracers";
     case EZMOCK_ERR_ARG_NDATA:  return "cannot return the number of tracers";
+    case EZMOCK_ERR_ARG_FNAME:  return "invalid file name";
+    case EZMOCK_ERR_ARG_RSD:    return "invalid RSD factor";
     case EZMOCK_ERR_COS_GROWTH: return "cannot obtain cosmic growth parameters";
     case EZMOCK_ERR_PK_FINITE:  return "infinite value detected";
     case EZMOCK_ERR_PK_NONPOS:  return "non-positive value detected";
@@ -63,6 +65,7 @@ const char *EZmock_errmsg(const int err) {
 #ifdef OMP
     case EZMOCK_ERR_FFT_INIT:   return "failed to initialise FFTW with OpenMP";
 #endif
+    case EZMOCK_ERR_FILE:       return "failed to write to the output file";
     case EZMOCK_ERR_UNKNOWN:    return "unknown error";
     default:                    return "unregistered error code";
   }

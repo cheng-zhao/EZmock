@@ -72,6 +72,19 @@
 #define EZMOCK_MODEL_GAUSS_WIDTH        10
 
 /*============================================================================*\
+                            Definitions for file IO
+\*============================================================================*/
+
+#define EZMOCK_FILE_CHUNK      1048576  /* chunk size for ASCII file IO */
+#define EZMOCK_SAVE_COMMENT    '#'
+#define OFMT_DBL "%.10lg"             /* Output format for double parameters */
+#ifdef SINGLE_PREC
+#define REAL_OFMT       "%.6g"
+#else
+#define REAL_OFMT       "%.10g"
+#endif
+
+/*============================================================================*\
                            Definitions for shortcuts
 \*============================================================================*/
 

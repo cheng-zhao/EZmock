@@ -176,6 +176,9 @@ int EZmock_setup_linear_pk(EZMOCK *ez, const double *k, const int n,
   if (ez->pk) EZmock_pk_destroy(ez->pk);
   ez->pk = pk;
 
+  EZMOCK_PAR *par = (EZMOCK_PAR *) ez->par;
+  par->bao_enhance = mBAO;
+
   return EZMOCK_SUCCESS;
 }
 

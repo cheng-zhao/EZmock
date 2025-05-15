@@ -171,7 +171,7 @@ int output_writeline(OFILE *ofile, const char *restrict format, ...) {
   }
 
   /* Check if the buffer is full. */
-  if (size >= ofile->max - ofile->size) {
+  if (size + ofile->size >= ofile->max) {
     bool enlarge = false;
     /* Enlarge the size of the buffer if necessary. */
     while (size >= ofile->max) {

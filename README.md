@@ -17,7 +17,7 @@ EZmock is among the fastest methods that are able to reproduce the clustering of
 
 This repository consists of 3 interfaces of the EZmock algorithm:
 -   A C library with APIs for the construction of EZmocks;
--   A python package that wraps the C library functions;
+-   A Python package that wraps the C library functions;
 -   A C program that generates EZmocks using the core library functions.
 
 All the interfaces are parallelised with the shared-memory Open Multi-Processing ([OpenMP](https://www.openmp.org)), and rely on the [FFTW](http://www.fftw.org) library for Fast Fourier Transforms (FFT). The C codes are compliant with the ISO C99 and IEEE POSIX.1-2008 standards. The software packages are written by Cheng Zhao (&#36213;&#25104;) based on the initial [fortran version](https://github.com/chia-hsun-chuang/ezmock) developed by [Dr. Chia-Hsun Chuang](https://github.com/chia-hsun-chuang).
@@ -53,12 +53,12 @@ make cleanlib  # clear the C libraries
 make cleanall  # clean everything
 ```
 
-If the C libraries are installed in the root directory of this repository, the python package can be built in the [`python`](python/) folder via
+If the C libraries are installed in the root directory of this repository, the Python package can be built in the [`python`](python/) folder via
 ```bash
-python setup.py build_ext -i
+pip install .
 ```
 
-Do not forget to add the path with `libEZmock.so` to your environment variable `LD_LIBRARY_PATH` before importing the python package.
+For the usage of the Python interface, please refer to the [example](example/fit/fit_EZmock.ipynb) of EZmock calibration.
 
 
 ## References

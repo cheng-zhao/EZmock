@@ -29,15 +29,42 @@
 #
 
 from setuptools import Extension, setup
+from setuptools.command.build_ext import build_ext
 from Cython.Build import cythonize
+import os, shutil
+
+package_name = 'EZmock'
+package_version = '1.0.0'
+lib_path = os.path.abspath('../build')  # build directory of libEZmock
+
+# Copy libEZmock.so before building
+class CustomBuildExt(build_ext):
+  def run(self):
+    lib_src = os.path.join(lib_path, 'lib', 'libEZmock.so')
+    lib_dst = os.path.join(package_name)
+    shutil.copy(lib_src, lib_dst)
+    super().run()
+
+ext_modules = [
+  Extension(
+    f'{package_name}.{package_name}',
+    sources = [os.path.join(package_name, 'EZmock.pyx')],
+    include_dirs = [os.path.join(lib_path, 'include')],
+    libraries = ['EZmock'],
+    library_dirs = [os.path.join(lib_path, 'lib')],
+    runtime_library_dirs = ['$ORIGIN'],
+    extra_compile_args = ['-std=c99','-O3','-Wall','-DSINGLE_PREC']
+  ),
+]
 
 setup(
-    ext_modules = cythonize(
-      Extension('EZmock', ['EZmock.pyx'],
-        include_dirs=['../include/'],
-        libraries=['EZmock'],
-        library_dirs=['../lib/'],
-        extra_compile_args=['-std=c99','-O3','-Wall','-DSINGLE_PREC']),
-      compiler_directives = {'language_level': '3'}
-    )
+  name = package_name,
+  version = package_version,
+  packages = [package_name],
+  package_data = {package_name: ['libEZmock.so']},
+  ext_modules = cythonize(
+   ext_modules,
+   compiler_directives = {'language_level': '3'}
+  ),
+  cmdclass = {'build_ext': CustomBuildExt}
 )

@@ -51,6 +51,7 @@ typedef struct {
   void *rng;            /* random number generator                      */
   void *cosmo;          /* structure growth parameters                  */
   void *pk;             /* linear power spectrum                        */
+  void *par;            /* parameters for the effective bias model      */
   void *mesh;           /* density and displacement fields              */
 } EZMOCK;
 
@@ -169,6 +170,32 @@ Return:
 int EZmock_populate_tracer(EZMOCK *ez, const real *params, const size_t nexp,
     const bool att_part, size_t *ntracer, real **x, real **y, real **z,
     real **vx, real **vy, real **vz, int *err);
+
+/******************************************************************************
+Function `EZmock_write_ascii`:
+  Write the tracer catalogue to an ASCII file.
+Arguments:
+  * `ez`:       instance of the EZmock generator;
+  * `x`:        array for the x coordinates;
+  * `y`:        array for the y coordinates;
+  * `z`:        array for the z coordinates;
+  * `vx`:       array for the peculiar velocities along the x direction;
+  * `vy`:       array for the peculiar velocities along the y direction;
+  * `vz`:       array for the peculiar velocities along the z direction;
+  * `ntracer`:  number of tracers to be written;
+  * `rsd_fac`:  factor of the z-velocity to be added to the z coordinate for
+                redshift-space distortion; write the redshift-space coordinates
+                if `rsd_fac` > 0, otherwise write the real-space coordinates
+                and velocities;
+  * `header`:   indicate if the header is to be written;
+  * `fname`:    name of the output file;
+  * `err`:      integer storing the error code.
+Return:
+  Zero on success; non-zero on error.
+******************************************************************************/
+int EZmock_write_ascii(EZMOCK *ez, const real *x, const real *y, const real *z,
+    const real *vx, const real *vy, const real *vz, const size_t ntracer,
+    const double rsd_fac, const bool header, const char *fname, int *err);
 
 /******************************************************************************
 Function `EZmock_destroy`:
