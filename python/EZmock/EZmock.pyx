@@ -39,7 +39,7 @@ cdef class EZmock:
   cdef int _Ng
 
 
-  def __cinit__(self, *args, **kwargs):
+  def __cinit__(self, Lbox, Ngrid, rng = 1, seed = 1, nthread = 0):
     '''
     Initialize the EZmock instance.
 
@@ -49,7 +49,7 @@ cdef class EZmock:
         Side length of the cubic simulation box.
     Ngrid: int
         Number of grid cells per box side for the density field.
-    rng: int, optional
+    rng: Literal[0, 1], optional
         Random number generation algorithm (0: MRG32K3A, 1: MT19937).
         Default: 1.
     seed: int, optional
@@ -59,21 +59,6 @@ cdef class EZmock:
         Number of OpenMP threads to be used.
         Default: 0 (maximum number of threads available).
     '''
-    # Retrieve arguments.
-    if 'Lbox' in kwargs:    Lbox = float(kwargs['Lbox'])
-    else: raise KeyError('`Lbox` is a required argument')
-
-    if 'Ngrid' in kwargs:   Ngrid = int(kwargs['Ngrid'])
-    else: raise KeyError('`Ngrid` is a required argument')
-
-    if 'rng' in kwargs:     rng = int(kwargs['rng'])
-    else: rng = 1
-
-    if 'seed' in kwargs:    seed = int(kwargs['seed'])
-    else: seed = 1
-
-    if 'nthread' in kwargs: nthread = int(kwargs['nthread'])
-    else: nthread = 0
 
     # Call the C initializer.
     self._err = 0
@@ -436,7 +421,7 @@ cdef class EZmock:
     att_part: boolean, optional
         True for attaching tracers to dark matter partciles whenever possible.
         Default: False.
-    rsd_fac: double, optional
+    rsd_fac: float, optional
         Positive for multiplying this factor to the z-velocity for
         redshift-space z coordinate, then write the redshift-space coordinates;
         otherwise, write the real-space coordinates and velocities.
